@@ -1,0 +1,10 @@
+delphi-ai-dev
+Copyright 2026 Ondřej Nový
+
+This product includes material derived from delphi-ai-skills
+(https://github.com/danieleteti/delphi-ai-skills), Copyright Daniele Teti,
+licensed under the Apache License, Version 2.0.
+
+Modified files:
+- skills/delphi-xe7/SKILL.md — derived from skills/delphi/SKILL.md, reduced to Delphi XE7.
+- skills/delphi-review/SKILL.md — structure inspired by skills/delphi-code-smells/SKILL.md.
