@@ -112,14 +112,15 @@ This is how an agent refactors code it does not fully understand without breakin
 
 ## Memory leaks
 
-In the test project `.dpr`:
+A leak should fail the test that caused it. `ReportMemoryLeaksOnShutdown := True` is not enough for that:
+it only shows a message box at exit, does not change the exit code, and on a CI runner the box either
+blocks the job or is never seen. Use it on a developer machine only.
 
-```delphi
-ReportMemoryLeaksOnShutdown := True;
-```
-
-A test run that reports a leak is a failed run. For a stack trace of where the leaked object was allocated,
-use FastMM4 in FullDebugMode in the test build.
+- **DUnitX:** add FastMM4 and `DUnitX.MemoryLeakMonitor.FastMM4` to the test `.dpr` `uses`; a test that
+  leaks fails. Mark known, accepted leaks with `[IgnoreMemoryLeaks]`.
+- **DUnit:** enable `FailsOnMemoryLeak` for the tests (with FastMM4 in the test project).
+- For a stack trace of where the leaked object was allocated, run FastMM4 in FullDebugMode with
+  `LogMemoryLeakDetailToFile` and no message boxes, and keep the log as a CI artifact.
 
 ## Learned rules
 

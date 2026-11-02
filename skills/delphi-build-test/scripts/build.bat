@@ -6,9 +6,10 @@ if "%~3"=="" (
   exit /b 2
 )
 
-set "PROJECT=%~1"
-set "CONFIG=%~2"
-set "PLATFORM=%~3"
+rem rsvars.bat clears PLATFORM, so the arguments are kept under other names.
+set "BUILD_PROJECT=%~1"
+set "BUILD_CONFIG=%~2"
+set "BUILD_PLATFORM=%~3"
 
 if "%BDS_RSVARS%"=="" set "BDS_RSVARS=C:\Program Files (x86)\Embarcadero\Studio\15.0\bin\rsvars.bat"
 
@@ -19,5 +20,5 @@ if not exist "%BDS_RSVARS%" (
 )
 
 call "%BDS_RSVARS%"
-msbuild "%PROJECT%" /t:Build /p:Config=%CONFIG% /p:Platform=%PLATFORM% /nologo /v:minimal
+msbuild "%BUILD_PROJECT%" /t:Build /p:Config=%BUILD_CONFIG% /p:Platform=%BUILD_PLATFORM% /nologo /v:minimal
 exit /b %ERRORLEVEL%

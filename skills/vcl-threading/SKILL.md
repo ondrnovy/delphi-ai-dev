@@ -19,8 +19,17 @@ and stays clickable.
 
 | Call | Behaviour | Use when |
 |------|-----------|----------|
-| `TThread.Queue(nil, procedure begin … end)` | asynchronous, the worker continues | progress, log lines, status — the default |
-| `TThread.Synchronize(nil, procedure begin … end)` | the worker waits until the main thread ran it | the worker needs a value back from the UI |
+| `Queue(procedure begin … end)` | asynchronous, the worker continues | progress, log lines, status — the default |
+| `Synchronize(procedure begin … end)` | the worker waits until the main thread ran it | the worker needs a value back from the UI |
+
+Inside a `TThread` descendant call the instance methods (`Queue(…)`, not `TThread.Queue(nil, …)`). Calls
+queued by the thread are discarded when it is destroyed; calls queued with `nil` are not, and can run
+against a form that is already gone. Destroy the worker before the form it reports to. From `TTask` or an
+anonymous thread only the class methods `TThread.Queue(nil, …)` / `TThread.Synchronize(nil, …)` are
+available; then the form must outlive the task.
+
+In XE7, `Queue` called **from the main thread** runs the code immediately, not later (`ForceQueue` arrived
+in 10.2). A fake device that answers synchronously on the main thread therefore causes reentrant calls.
 
 Capture copies, not shared variables: anonymous methods capture variables **by reference**, so a loop
 variable or a field changed by the worker may have moved on by the time the queued code runs.
@@ -30,8 +39,13 @@ variable or a field changed by the worker may have moved on by the time the queu
 - `Terminate` only sets `Terminated`. The `Execute` loop must check it and exit.
 - A blocking read never sees `Terminated`. Use timeouts on every device or socket read, or an event the
   stop path can signal (`TEvent`).
-- **Deadlock:** the main thread calls `WaitFor` on a worker while the worker is inside `Synchronize`.
-  Both wait forever. Never `WaitFor` a thread that may `Synchronize`; use `Queue`, or signal and wait without blocking the message loop.
+- **Deadlock:** the main thread blocks on something the worker cannot release while the worker sits in
+  `Synchronize`: `TEvent.WaitFor`, `WaitForSingleObject`, a critical section the worker needs, a busy loop.
+  Both wait forever. `TThread.WaitFor` itself is safe from the main thread, because it processes pending
+  `Synchronize` calls while it waits; calling it from inside a synchronized method is not.
+  Prefer `Queue`, and never block the main thread on anything else a worker might need.
+- An exception that escapes `Execute` ends the thread silently and is stored in `FatalException`. Catch,
+  log and report it to the UI, or check `FatalException` in `OnTerminate`.
 - `FreeOnTerminate := True` means nobody may touch the object after `Start`. Pick one owner.
 
 ## Shared state
@@ -77,7 +91,7 @@ var
 begin
   Frame := Copy(AFrame);
   Handler := FOnFrame;
-  TThread.Queue(nil,
+  Queue(
     procedure
     begin
       Handler(Frame);

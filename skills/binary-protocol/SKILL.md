@@ -39,8 +39,11 @@ Typical shape: start marker, length, type, payload, CRC. The parser:
 
 ## CRC
 
-Table-driven, with **published test vectors** in a unit test (for CRC-16/CCITT, CRC-32 and friends the
-check value of the ASCII string `123456789` is the standard vector). A CRC without a test vector is a guess.
+Table-driven, with **published test vectors** in a unit test (the check value of the ASCII string
+`123456789` is the standard vector). A CRC without a test vector is a guess.
+
+Name the exact variant: polynomial, init, reflection, xorout and check value. "CRC-16/CCITT" alone covers
+several incompatible algorithms (CCITT-FALSE `0x29B1`, KERMIT `0x2189`, XMODEM `0x31C3`, X-25 `0x906E`).
 
 ## Versions
 

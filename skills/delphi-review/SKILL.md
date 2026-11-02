@@ -7,8 +7,8 @@ description: Use when reviewing a Delphi change (own or someone else's) before i
 
 Inspired by `delphi-code-smells` in [danieleteti/delphi-ai-skills](https://github.com/danieleteti/delphi-ai-skills).
 
-**Let the machine go first.** Build with warnings on (`delphi-build-test`) and run the tests with
-`ReportMemoryLeaksOnShutdown := True`. Then review by hand, in this order. Report what each finding costs
+**Let the machine go first.** Build with warnings on (`delphi-build-test`) and run the tests with leak
+detection (`delphi-testing`). Then review by hand, in this order. Report what each finding costs
 at runtime; a style remark is not a finding.
 
 ## 1. Lifetime and ownership
@@ -27,7 +27,8 @@ at runtime; a style remark is not a finding.
 ## 3. Threads
 
 - Any VCL access from `Execute`, `TTask.Run` or an anonymous thread.
-- `WaitFor` on a thread that may `Synchronize`.
+- The main thread blocking (event, critical section, `WaitForSingleObject`) while a worker may be in `Synchronize`.
+- `TThread.Queue(nil, …)` from a worker that can be destroyed before the queued call runs.
 - Variables captured by reference in a queued anonymous method.
 - Blocking reads without timeout.
 

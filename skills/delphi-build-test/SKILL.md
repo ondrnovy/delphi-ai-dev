@@ -44,12 +44,25 @@ Panel.Config.pas(118): warning W1035: Return value of function 'TConfig.Load' mi
 scripts\test.bat <Tests.dproj> <Win32|Win64>
 ```
 
-- Builds the test project and runs its console runner. The exit code is non-zero when a test fails.
-- **DUnit** ships with XE7. **DUnitX** is open source and is added to the project separately.
-  With DUnitX, register `TDUnitXXMLNUnitFileLogger` (`DUnitX.Loggers.Xml.NUnit`) in the test `.dpr`
-  to get an XML report that GitLab can show on the merge request.
-- Logic that lives inside a form cannot be unit tested. When a change touches such logic, move it to a
-  plain unit first, cover it with a test, then change it (`delphi-architecture`).
+- Builds the test project and runs it. A failing test must make the exit code non-zero, and that is not
+  automatic: the test project has to be a **console** runner that sets the exit code.
+- **DUnitX** (open source, added to the project separately) — in the test `.dpr`:
+
+  ```delphi
+  Runner.AddLogger(TDUnitXXMLJUnitFileLogger.Create(TDUnitX.Options.XMLOutputFile));  // DUnitX.Loggers.XML.JUnit
+  Results := Runner.Execute;
+  if not Results.AllPassed then
+    System.ExitCode := EXIT_ERRORS;
+  ```
+
+  GitLab shows test results on the merge request only from **JUnit** XML (`artifacts:reports:junit`).
+- **DUnit** (ships with XE7) — the default wizard project is a GUI runner that opens a window and hangs CI.
+  Define `CONSOLE_TESTRUNNER` and call `TextTestRunner.RunRegisteredTests(rxbHaltOnFailures)`.
+- If `test.bat` cannot find the executable (custom `DCC_ExeOutput`), set `TEST_EXE`.
+- Win64 builds only when the platform is enabled in the `.dproj`.
+- Logic that lives inside a form should not be unit tested there (slow, fragile). When a change touches
+  such logic, move it to a plain unit first, cover it with a test, then change it (`delphi-architecture`).
+- A new unit must be added to the `.dpr` `uses` and the `.dproj`; a file that only exists on disk is not built.
 - What to test and how: `delphi-testing`. UI checks in the running application: `vcl-ui-testing`.
 
 ## CI (GitLab)

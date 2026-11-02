@@ -50,13 +50,15 @@ A plausible API that does not exist in XE7 costs a compile error and the reviewe
 | `TNoRefCountObject` | 11 Alexandria | `TSingletonImplementation` (`System.Generics.Defaults`) or own `_AddRef`/`_Release` returning `-1` |
 | binary literals `%1010`, digit separators `1_000` | 11 Alexandria | hex `$0A`, plain digits |
 | multiline string literals `'''` | 12 Athens | concatenation |
-| `if … then … else` as an expression, `NameOf`, `is not` | 13 Florence | `IfThen` (`System.Math` / `System.StrUtils`) or a plain `if` |
-| `THashSet<T>`, `TOrderedDictionary<K,V>` | 12 Athens | `TDictionary<T, Boolean>` |
-| `TThread.ForceQueue` | 10.2 Tokyo | `TThread.Queue` |
+| `if … then … else` as an expression, `NameOf`, `is not`, `not in` | 13 Florence | `IfThen` (`System.Math` / `System.StrUtils`) or a plain `if`; `not (x is T)` |
+| `THashSet<T>`, `TOrderedDictionary<K,V>` | 12.x Athens | `TDictionary<T, Boolean>` |
+| `TThread.ForceQueue` | 10.2 Tokyo | `TThread.Queue` (but see `vcl-threading`: from the main thread it runs immediately) |
 | `System.JSON.Serializers` | 10.3 Rio | `System.JSON` DOM (`TJSONObject`) |
+| `System.Hash` (`THashSHA2`, `THashMD5`) | XE8 | the hashing the project already uses, or Indy (`IdHashSHA`, `IdHashMessageDigest`) |
+| `System.Net.HttpClient` (`THTTPClient`) | XE8 | Indy `TIdHTTP` |
+| `TControl.RaiseOnNonMainThreadUsage` | 11 Alexandria | review (`vcl-threading`) |
 
-Verify before use (availability in XE7 not confirmed here): `System.Hash`, `System.NetEncoding`,
-`TControl.RaiseOnNonMainThreadUsage`, `TStringList.Create(OwnsObjects)`.
+Verify before use (version not confirmed here): `TStringList.Create(OwnsObjects)`.
 
 ## Available in XE7 — fine to use
 
@@ -64,6 +66,7 @@ Verify before use (availability in XE7 not confirmed here): `System.Hash`, `Syst
 - `TStringHelper` (`s.ToUpper`, `s.Chars[0]` — **0-based**) (XE3)
 - `System.Threading`: `TTask`, `ITask`, `IFuture<T>`, `TParallel.&For` — **new in XE7**
 - Dynamic array improvements — **new in XE7**: `[1, 2, 3]` initialisation, `+` concatenation, `Insert`, `Delete`
+- `System.NetEncoding` (`TNetEncoding.Base64`, `.URL`, `.HTML`) — **new in XE7**
 - `System.JSON` (XE6), `TThread.CreateAnonymousThread`, `TMonitor`, `TInterlocked`
 
 Gate anything else explicitly:
@@ -134,6 +137,7 @@ Two interfaces referencing each other never reach zero: a leak. Break the cycle 
 | `Sleep` or blocking I/O on the main thread | a worker thread, see `vcl-threading` |
 | touching a control from a worker thread | `TThread.Synchronize` / `TThread.Queue` |
 | `TCriticalSection` from `System.Classes` | `System.SyncObjs` |
+| new unit created on disk only | add it to the `.dpr` `uses` and the `.dproj` (`<DCCReference>`), or the build ignores it |
 
 ## Unit skeleton (XE7)
 
@@ -149,13 +153,20 @@ uses
 type
   ESessionError = class(Exception);
 
+  TDeviceFrame = class
+  private
+    FID: Integer;
+  public
+    property ID: Integer read FID write FID;
+  end;
+
   TSession = class
   private
-    FFrames: TObjectList<TFrame>;
+    FFrames: TObjectList<TDeviceFrame>;
   public
     constructor Create;
     destructor Destroy; override;
-    function FindByID(const AID: Integer): TFrame;
+    function FindByID(const AID: Integer): TDeviceFrame;
   end;
 
 implementation
@@ -163,7 +174,7 @@ implementation
 constructor TSession.Create;
 begin
   inherited Create;
-  FFrames := TObjectList<TFrame>.Create;
+  FFrames := TObjectList<TDeviceFrame>.Create;
 end;
 
 destructor TSession.Destroy;
@@ -172,9 +183,9 @@ begin
   inherited Destroy;
 end;
 
-function TSession.FindByID(const AID: Integer): TFrame;
+function TSession.FindByID(const AID: Integer): TDeviceFrame;
 var
-  Frame: TFrame;
+  Frame: TDeviceFrame;
 begin
   for Frame in FFrames do
     if Frame.ID = AID then

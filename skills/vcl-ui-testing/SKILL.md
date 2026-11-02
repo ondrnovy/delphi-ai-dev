@@ -23,8 +23,10 @@ reads the printed tree or the screenshot, and knows whether the change works in 
 
 Consequences:
 
-- An edit box has no caption, and its `TLabel` is invisible. Locate it by its container and order
-  (`found_index`), and keep that stable, or give the container a meaningful caption.
+- An edit box has no caption, and its `TLabel` is invisible. For fields that tests need, use `TStaticText`
+  (a real window) as the label: UIA then shows its text and usually uses it as the edit's name. Otherwise
+  locate the edit by its container and order (`found_index`) and keep that stable.
+- A status bar's panel texts are child elements; read them from the children, not from the bar itself.
 - A toolbar of `TSpeedButton`s cannot be clicked through UIA. Use the menu or keyboard shortcut for the same
   action, or switch that toolbar to `TToolBar` / `TButton`.
 - Verify the tree before writing a test: `scripts/dump_tree.py` prints it. Never guess control names.
@@ -68,8 +70,8 @@ Rules:
 
 ## Commercial alternative
 
-TestComplete (SmartBear) records and replays VCL UI and has deeper Delphi support, including some
-non-windowed controls when the application is built with its open-application units. Worth it when the team
+TestComplete (SmartBear) records and replays VCL UI and has deeper Delphi support: with the application
+compiled with debug information it reads internal VCL objects, including non-windowed controls such as labels. Worth it when the team
 already owns a licence; pywinauto is enough for smoke tests and for the agent's own checks.
 
 ## Learned rules

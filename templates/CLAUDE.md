@@ -11,9 +11,9 @@ start of every session; the skills in `skills/` hold the general knowledge, this
 
 ## Build and test
 
-- Build: `skills\delphi-build-test\scripts\build.bat <Main.dproj> Debug Win32`
-- Tests: `skills\delphi-build-test\scripts\test.bat <Tests.dproj> Win32`
-- UI smoke tests: `python -m pytest <ui-tests folder>` with `APP_EXE` and `APP_TITLE_RE` set
+- Build: `.claude\skills\delphi-build-test\scripts\build.bat <Main.dproj> Debug Win32`
+- Tests: `.claude\skills\delphi-build-test\scripts\test.bat <Tests.dproj> Win32`
+- UI smoke tests: `python -m pytest <ui-tests folder>` with `APP_EXE`, `APP_TITLE_RE` and `APP_ARGS` set
 - Fake device: start the application with `<--fake-device or the project's switch>`
 - A change is done when build and tests pass with no new warnings; a change to a form is also clicked through.
 

@@ -20,10 +20,14 @@ description: Use when porting logic from a Delphi desktop application to C# / .N
 | `Integer` / `Cardinal` | `int` / `uint` | |
 | `Int64` / `UInt64` | `long` / `ulong` | |
 | `Byte`, `Word`, `LongWord` | `byte`, `ushort`, `uint` | |
+| `NativeInt` / `NativeUInt` | `nint` / `nuint` | size follows the platform |
+| `Boolean` / `LongBool` | `bool` | in a binary layout `Boolean` is 1 byte, `LongBool` 4; marshal explicitly |
 | `Currency` | `decimal` | Currency is fixed 4 decimals |
+| `Single` | `float` | |
 | `Double` / `Extended` | `double` | `Extended` is 80-bit on Win32; results can differ in the last digits |
-| `TDateTime` | `DateTime` via `DateTime.FromOADate` / `ToOADate` | same epoch (1899-12-30); time zones are not part of `TDateTime` |
+| `TDateTime` | `DateTime` via `DateTime.FromOADate` / `ToOADate` | same epoch (1899-12-30); `FromOADate` rounds to whole milliseconds and returns `Kind = Unspecified`; compare test vectors with a tolerance or as ticks |
 | `string` (1-based) | `string` (0-based) | every index and `Copy(s, i, n)` call shifts by one |
+| `AnsiString`, `RawByteString`, `ShortString`, `AnsiChar`, `PAnsiChar` | `byte[]` + an explicit `Encoding` | code-page text in protocols and files; on .NET (Core) `Encoding.GetEncoding(1250)` throws until `CodePagesEncodingProvider.Instance` is registered; `ShortString` has a length byte in front |
 | `TBytes` | `byte[]` / `ReadOnlySpan<byte>` | |
 | set of enum | `[Flags] enum` | |
 | `record` | `struct` or `record struct` | value semantics match; check copies in loops |
@@ -37,8 +41,12 @@ description: Use when porting logic from a Delphi desktop application to C# / .N
 - **`div` and `mod` with negative numbers** behave like C# `/` and `%` on integers (truncation). Keep a test anyway.
 - **Rounding:** Delphi `Round` uses banker's rounding; C# `Math.Round` defaults to the same (`ToEven`). `Trunc` → `Math.Truncate`.
 - **Byte order:** use `BinaryPrimitives.ReadUInt16BigEndian` etc. explicitly, never `BitConverter` without checking `IsLittleEndian`.
-- **String comparison:** Delphi `SameText` vs `string.Equals(…, StringComparison.OrdinalIgnoreCase)` — choose the comparison explicitly.
-- **Default values:** Delphi zeroes object fields; C# does too, but local variables in Delphi are not initialised.
+- **String comparison:** Delphi `SameText` / `CompareText` fold only ASCII letters, `AnsiSameText` uses the
+  locale, C# `OrdinalIgnoreCase` folds all of Unicode. With Czech characters (`é` / `É`) they disagree.
+  Choose the comparison explicitly and cover it with a vector.
+- **Default values:** Delphi zeroes object fields and initialises managed locals (`string`, dynamic arrays,
+  interfaces, `Variant`); other locals (`Integer`, `Double`, records without managed fields, pointers) start
+  with garbage. C# refuses to compile a read of an unassigned local, so such Delphi bugs surface during the port.
 
 ## Done means
 
